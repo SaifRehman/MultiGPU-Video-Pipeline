@@ -1,1 +1,71 @@
 # MultiGPU-Video-Pipeline
+> **A crash-proof, multi-GPU assembly line for cinematic 4K AI video generation.**
+
+Example tp intelligently partitions **FLUX.1-dev** (Image Anchor), **CogVideoX-5B** (Motion Engine), and **Real-ESRGAN** (4K Upscaling + 24fps Interpolation) across a multi-GPU cluster. 
+
+By isolating each heavy model to its own dedicated GPU, this architecture entirely bypasses the dreaded "PCIe Traffic Jam" and Out-Of-Memory (OOM) crashes. It allows you to generate Hollywood-quality, smooth 24-FPS 4K AI video on standard 24GB consumer cards (like the NVIDIA L4, 3090, or 4090) without melting your motherboard.
+
+---
+
+**The Problem:** Running a 12B parameter image model (FLUX) and a 5B parameter video diffusion model (CogVideoX) on a single 24GB GPU causes catastrophic VRAM overflow. If you try to spread a single video model across multiple GPUs using standard data parallelism, you force the motherboard to shuttle gigabytes of data back and forth across the PCIe lanes. This creates a massive traffic jam, resulting in painfully slow render times.
+
+**The Solution:** An API-driven Assembly Line. FrankenRender treats your multi-GPU server like a factory floor. Models never share VRAM and never fight for bandwidth.
+
+### System Architecture (4x GPU Setup)
+* **GPU 0 (OS & Network):** Left empty to handle OS operations, system network traffic, and terminal routing without stuttering.
+* **GPU 1 (Port 8001):** Runs `CogVideoX-5B`. Takes the 480p anchor image and computes the heavy 3D physical motion physics at 100% utilization.
+* **GPU 2 (Port 8002):** Runs `Real-ESRGAN`. Takes the raw video, uses FFmpeg optical flow to boost it from 8fps to a buttery smooth 24fps, and upscales every single frame to 4K.
+* **GPU 3 (Port 8000):** Runs `FLUX.1-dev`. Paints the hyper-detailed 720x480 anchor image in Fast Mode and immediately goes back to sleep.
+
+---
+
+## ⚙️ Prerequisites
+
+You need a multi-GPU Linux server (ideally with 3 or 4 GPUs holding 24GB VRAM each) and a fast internet connection to download the initial model weights.
+
+**System Dependencies:**
+You *must* install `ffmpeg` on your host machine. The pipeline relies on its optical flow algorithm (`minterpolate`) to smooth the AI video from 8 FPS to 24 FPS.
+```bash
+sudo dnf install epel-release -y
+sudo dnf install ffmpeg -y
+pip install -r requirements.txt
+```
+## 🚀 Booting the Studio
+
+Because this is a distributed pipeline, you need to start up the three worker nodes (APIs) before triggering the master script. It is highly recommended to use `tmux`, `screen`, or multiple terminal windows.
+
+### Step 1: Start the FLUX Anchor Engine
+```bash
+python flux-image-generator.py
+```
+Wait for the API to boot on http://localhost:8000 and confirm FLUX is isolated on GPU 3.
+
+### Step 2: Start the CogVideoX Motion Engine
+
+``` bash
+python cog-video-generator.py
+```
+Wait for the API to boot on http://localhost:8001 and confirm CogVideoX is locked on GPU 1.
+
+### Step 3: Start the 4K Post-Production Engine
+
+```bash
+python upscale.py
+```
+
+Wait for the API to boot on http://localhost:8002 and confirm Real-ESRGAN is sitting on GPU 2.
+
+
+### Step 4: Run the Master Orchestrator
+
+Once all three engines are idling, open a fourth terminal window and trigger the generation!
+
+```bash
+python frankenstein.py "A sleek cybernetic cat with glowing pink optical lenses and carbon-fiber plating, crouched aggressively on a rain-drenched metal hood of a futuristic flying car, 8k, photorealistic | The robotic cat suddenly leaps directly toward the camera in cinematic slow motion. Raindrops shatter against its metal body as the camera dynamically pans back" --upscale
+```
+
+The frankenstein.py script will automatically pass your prompt to FLUX, hand the image to CogVideoX, and finally pipe the raw video to the Upscaler. Grab a coffee and watch your terminal for the progress updates!
+
+Wait for the API to boot on http://localhost:8002 and confirm Real-ESRGAN is sitting on GPU 2.
+
+
