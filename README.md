@@ -34,6 +34,45 @@ By isolating each heavy model to its own dedicated GPU, this architecture entire
 * **GPU 2 (Port 8002):** Runs `Real-ESRGAN`. Takes the raw video, uses FFmpeg optical flow to boost it from 8fps to a buttery smooth 24fps, and upscales every single frame to 4K.
 * **GPU 3 (Port 8000):** Runs `FLUX.1-dev`. Paints the hyper-detailed 720x480 anchor image in Fast Mode and immediately goes back to sleep.
 
+
+GPUs being used
+``` bash
+bash-5.1# nvidia-smi
+Sun Mar 22 11:36:11 2026
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 550.163.01             Driver Version: 550.163.01     CUDA Version: 12.4     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA L4                      On  |   00000000:38:00.0 Off |                    0 |
+| N/A   29C    P8             16W /   72W |       4MiB /  23034MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   1  NVIDIA L4                      On  |   00000000:3A:00.0 Off |                    0 |
+| N/A   37C    P0             26W /   72W |     385MiB /  23034MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   2  NVIDIA L4                      On  |   00000000:3C:00.0 Off |                    0 |
+| N/A   41C    P0             28W /   72W |    2219MiB /  23034MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+|   3  NVIDIA L4                      On  |   00000000:3E:00.0 Off |                    0 |
+| N/A   39C    P0             26W /   72W |     465MiB /  23034MiB |      0%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    1   N/A  N/A     49618      C   python                                        376MiB |
+|    2   N/A  N/A     52725      C   python                                       2210MiB |
+|    3   N/A  N/A     49505      C   python                                        456MiB |
++-----------------------------------------------------------------------------------------+
+```
 ---
 
 ## ⚙️ Prerequisites
