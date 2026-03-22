@@ -26,7 +26,7 @@ By isolating each heavy model to its own dedicated GPU, this architecture entire
 
 **The Problem:** Running a 12B parameter image model (FLUX) and a 5B parameter video diffusion model (CogVideoX) on a single 24GB GPU causes catastrophic VRAM overflow. If you try to spread a single video model across multiple GPUs using standard data parallelism, you force the motherboard to shuttle gigabytes of data back and forth across the PCIe lanes. This creates a massive traffic jam, resulting in painfully slow render times.
 
-**The Solution:** An API-driven Assembly Line. FrankenRender treats your multi-GPU server like a factory floor. Models never share VRAM and never fight for bandwidth.
+**The Solution:** An API-driven Assembly Line. Script treats your multi-GPU server like a factory floor. Models never share VRAM and never fight for bandwidth.
 
 ### System Architecture (4x GPU Setup)
 * **GPU 0 (OS & Network):** Left empty to handle OS operations, system network traffic, and terminal routing without stuttering.
